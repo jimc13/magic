@@ -1,0 +1,6 @@
+exports/*.txt
+decks/*.txt
+*.pyc
+*.pickle
+*.un~
+venv
