@@ -7,8 +7,8 @@ from get_csv_data_from_google_sheet import get_decklists_from_googlesheet
 
 def main(url):
     decklists = get_decklists_from_googlesheet(url)
-    repr_main = {"//main", "//main-1", "MB:", "MB", "//deck", "//deck-1", "//Mainboard", "Maindeck (60):", "//Creatures:", "//Creatures", "//Spells", "//Lands", "//Lands:", "//Sorceries:", "//Planeswalkers:", "//Artifacts:"}
-    repr_side = {"//sideboard", "Sideboard (15):", "// 15 Sideboard", "//sideboard-1", "SB:", "SB", "Sideboard", "Sideboard:", "Sideboard//", "//Sideboard:", "Side Board", "SIDEBOARD","//Sideboard"}
+    repr_main = {"//main", "//main-1", "Main:", "MB:", "Mainboard", "MB", "//deck", "//deck-1", "//Mainboard", "Maindeck (60):", "//Creatures:", "//Creatures", "//Spells", "//Lands", "//Lands:", "//Sorceries:", "//Planeswalkers:", "//Artifacts:"}
+    repr_side = {"//sideboard", "Side:", "Sideboard (15):", "Sideboard //", "// 15 Sideboard", "//sideboard-1", "SB:", "SB", "Sideboard", "Sideboard:", "Sideboard//", "//Sideboard:", "Side Board", "SIDEBOARD","//Sideboard"}
     repr_break = {"//maybe-1", "//token-1"}
     cards_mainboard = {}
     cards_sideboard = {}
