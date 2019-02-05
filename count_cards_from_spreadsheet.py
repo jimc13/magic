@@ -5,11 +5,19 @@ import codecs
 from parse_goldfish import get_list_from_goldfish, add_card_to_cards
 from get_csv_data_from_google_sheet import get_decklists_from_googlesheet
 
+def line_in_set(line, set_to_match):
+    for pattern_to_match in set_to_match:
+        if re.match(r'^(//)?(\d )?{}(-1)?( \(\d+\))?:?$'.format(pattern_to_match), line, flags=re.M|re.I):
+            return True
+
+    return False
+
 def main(url):
     decklists = get_decklists_from_googlesheet(url)
-    repr_main = {"//main", "//main-1", "Main:", "MB:", "Mainboard", "MB", "//deck", "//deck-1", "//Mainboard", "Maindeck (60):", "//Creatures:", "//Creatures", "//Spells", "//Lands", "//Lands:", "//Sorceries:", "//Planeswalkers:", "//Artifacts:", "Main Deck", "// 16 Instant", "Main Deck:", "// 8 Instant", "mainboard:", "deck", "// 60 Maindeck", "// 20 Creature", "// 20 Land", "// 4 Sorcery", "// 5 Creature", "// 2 Enchantment", "// Turbo Ninja", "Starts in Deck - 60/22 cards"}
-    repr_side = {"//sideboard", "Side:", "Sideboard (15):", "Sideboard //", "// 15 Sideboard", "//sideboard-1", "SB:", "SB", "Sideboard", "Sideboard:", "Sideboard//", "//Sideboard:", "Side Board", "SIDEBOARD","//Sideboard", "sideboard:", "sideboard"}
-    repr_break = {"//maybe-1", "//token-1"}
+    repr_main = {"main", "mainboard", "mb", "md", "deck", "main ?deck", "creatures?", "spells", "lands?", "sorceries", "planeswalkers", "artifacts", "instant", "sorcery", "enchantments?", "Starts in Deck - .* cards" }
+    repr_side = {"side ?board", "side", "sb"}
+    repr_break = {"//maybe-1", "//token-1", "Added Tokens for Convenience:"}
+    repr_ignore = {"// Turbo Ninja", "==========", "2f54f"}
     cards_mainboard = {}
     cards_sideboard = {}
     exceptions = set()
@@ -31,13 +39,19 @@ def main(url):
                 # Lazily using l for the list so we don't overwrite it for the
                 # next bit, maybe we could use more than 1 function :P
                 for m in repr_main:
-                    l = re.sub(r'^{}$'.format(m), '', l, flags=re.M)
+                    l = re.sub(r'^(//)?(\d )?{}(-1)?( \(\d+\))?:?$'.format(m), '', l, flags=re.M|re.I)
 
                 for s in repr_side:
-                    l = re.sub(r'^{}$'.format(s), '', l, flags=re.M)
+                    l = re.sub(r'^(//)?(\d )?{}(-1)?( \(\d+\))?:?$'.format(s), '', l, flags=re.M|re.I)
+
+                for ig in repr_ignore:
+                    l = re.sub(r'^(//)?(\d )?{}(-1)?( \(\d+\))?:?$'.format(ig), '', l, flags=re.M|re.I)
 
                 l = l.strip()
-                maintext, sidetext = l.split('\n\n', -1)
+                try:
+                    maintext, sidetext = l.split('\n\n', -1)
+                except:
+                    maintext, sidetext = l.split('\n \n', -1)
                 main = maintext.split('\n')
                 side = sidetext.split('\n')
             except:
@@ -50,23 +64,31 @@ def main(url):
                 decklist = decklist.strip()
                 decklist = decklist.split('\n')
                 set_decklist = set(decklist)
-                if not repr_side.intersection(set(decklist)):
+                sb = False
+                for line in decklist:
+                    if line_in_set(line, repr_side):
+                        sb = True
+                        break
+
+                if not sb:
                     # A sideboard isn't required but warn as this may cause issues
                     # Add 2: lists start at 0; count the key
                     print(decklist)
                     exceptions.add("Assumed all cards from row {} were from mainboard as couldn't separate it from the sideboard".format(i+2))
 
                 for card in decklist:
-                    if card in repr_main:
+                    if line_in_set(card, repr_main):
                         add_to = main
-                    elif card in repr_side:
+                    elif line_in_set(card, repr_side):
                         add_to = side
-                    elif card in repr_break:
+                    elif line_in_set(card, repr_break):
                         # If a maybe board or list of tokens are supplied we
                         # shouldn't add them to either the side or mainboard
                         # We assume that this will always be at the bottom of
                         # the deck
                         break
+                    elif line_in_set(card, repr_ignore):
+                        continue
                     else:
                         # Decklists should only contain meta data such as Deck
                         # Sideboard and a list of cards
@@ -96,15 +118,29 @@ def main(url):
 
     sorted_cards_mainboard = sorted(cards_mainboard.items(), key=operator.itemgetter(1), reverse=True)
     sorted_cards_sideboard = sorted(cards_sideboard.items(), key=operator.itemgetter(1), reverse=True)
-    return sorted_cards_mainboard, sorted_cards_sideboard, exceptions
+    excepts_to_print = []
+    for exception in exceptions:
+        remove = False
+        for to_ignore in repr_main, repr_side, repr_break, repr_ignore:
+            for pattern_to_remove in to_ignore:
+                if re.match(r'^(//)?(\d )?{}(-1)?( \(\d+\))?:?$'.format(pattern_to_remove), exception, flags=re.M|re.I):
+                    remove = True
+
+        if not remove:
+            excepts_to_print.append(exception)
+
+    return sorted_cards_mainboard, sorted_cards_sideboard, excepts_to_print
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("url")
     args = parser.parse_args()
+    print("Downloading doc")
     name = re.search(r"""<meta property="og:title" content="(.*?)">""", requests.get(args.url).text).group(1).replace(" ", "_").lower()
-    sorted_cards_mainboard, sorted_cards_sideboard, exceptions = main(args.url)
+    print("Processing doc")
+    sorted_cards_mainboard, sorted_cards_sideboard, excepts_to_print = main(args.url)
+    print("Writing output files")
     with codecs.open("exports/{}_mainboards.txt".format(name), "w", "utf-8-sig") as f:
         for card in sorted_cards_mainboard:
             f.write('{} {}\r\n'.format(card[1], card[0]))
@@ -113,5 +149,5 @@ if __name__ == "__main__":
         for card in sorted_cards_sideboard:
             f.write('{} {}\r\n'.format(card[1], card[0]))
 
-    if exceptions:
-        print("\n*****Errors:****\n {}\n".format(exceptions))
+    if excepts_to_print:
+        print("\n*****Errors:****\n {}\n".format(excepts_to_print))
