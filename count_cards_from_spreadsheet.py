@@ -7,8 +7,8 @@ from get_csv_data_from_google_sheet import get_decklists_from_googlesheet
 
 def main(url):
     decklists = get_decklists_from_googlesheet(url)
-    repr_main = {"//main", "//main-1", "Main:", "MB:", "Mainboard", "MB", "//deck", "//deck-1", "//Mainboard", "Maindeck (60):", "//Creatures:", "//Creatures", "//Spells", "//Lands", "//Lands:", "//Sorceries:", "//Planeswalkers:", "//Artifacts:"}
-    repr_side = {"//sideboard", "Side:", "Sideboard (15):", "Sideboard //", "// 15 Sideboard", "//sideboard-1", "SB:", "SB", "Sideboard", "Sideboard:", "Sideboard//", "//Sideboard:", "Side Board", "SIDEBOARD","//Sideboard"}
+    repr_main = {"//main", "//main-1", "Main:", "MB:", "Mainboard", "MB", "//deck", "//deck-1", "//Mainboard", "Maindeck (60):", "//Creatures:", "//Creatures", "//Spells", "//Lands", "//Lands:", "//Sorceries:", "//Planeswalkers:", "//Artifacts:", "Main Deck", "// 16 Instant", "Main Deck:", "// 8 Instant", "mainboard:", "deck", "// 60 Maindeck", "// 20 Creature", "// 20 Land", "// 4 Sorcery", "// 5 Creature", "// 2 Enchantment", "// Turbo Ninja", "Starts in Deck - 60/22 cards"}
+    repr_side = {"//sideboard", "Side:", "Sideboard (15):", "Sideboard //", "// 15 Sideboard", "//sideboard-1", "SB:", "SB", "Sideboard", "Sideboard:", "Sideboard//", "//Sideboard:", "Side Board", "SIDEBOARD","//Sideboard", "sideboard:", "sideboard"}
     repr_break = {"//maybe-1", "//token-1"}
     cards_mainboard = {}
     cards_sideboard = {}
@@ -21,12 +21,23 @@ def main(url):
         else:
             # Fairly lazy way to make this run on Windows, I'm happy \r\n
             # will always represent a newline in our input data
-            decklist.replace('\r\n', '\n')
+            decklist = decklist.replace('\r\n', '\n')
             # If there is only one double newline we can be confident that
             # it separate's the side and mainboard
             try:
-                # confirm this passes my stuff ok
-                maintext, sidetext = decklist.split('\n\n', -1)
+                l = decklist
+                # If there is just the one newline in the middle we can strip
+                # all the other crap
+                # Lazily using l for the list so we don't overwrite it for the
+                # next bit, maybe we could use more than 1 function :P
+                for m in repr_main:
+                    l = re.sub(r'^{}$'.format(m), '', l, flags=re.M)
+
+                for s in repr_side:
+                    l = re.sub(r'^{}$'.format(s), '', l, flags=re.M)
+
+                l = l.strip()
+                maintext, sidetext = l.split('\n\n', -1)
                 main = maintext.split('\n')
                 side = sidetext.split('\n')
             except:
@@ -36,11 +47,13 @@ def main(url):
             # complex way
             if not main and not side:
                 add_to = main
+                decklist = decklist.strip()
                 decklist = decklist.split('\n')
                 set_decklist = set(decklist)
                 if not repr_side.intersection(set(decklist)):
                     # A sideboard isn't required but warn as this may cause issues
-                    # Add 2: lists start at 0; first row of csv is the key
+                    # Add 2: lists start at 0; count the key
+                    print(decklist)
                     exceptions.add("Assumed all cards from row {} were from mainboard as couldn't separate it from the sideboard".format(i+2))
 
                 for card in decklist:
