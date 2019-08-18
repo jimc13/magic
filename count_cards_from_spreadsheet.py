@@ -15,7 +15,7 @@ def line_in_set(line, set_to_match):
 def main(url):
     decklists = get_decklists_from_googlesheet(url)
     repr_main = {"main", "mainboard", "mb", "md", "deck", "main ?deck", "creatures?", "spells", "lands?", "sorceries", "planeswalkers", "artifacts", "instant", "sorcery", "enchantments?", "Starts in Deck - .* cards" }
-    repr_side = {"side ?board", "side", "sb"}
+    repr_side = {"side ?board", "side", "sb", "------------------------------", "_____SB:"}
     repr_break = {"//maybe-1", "//token-1", "Added Tokens for Convenience:"}
     repr_ignore = {"// Turbo Ninja", "==========", "2f54f"}
     cards_mainboard = {}
