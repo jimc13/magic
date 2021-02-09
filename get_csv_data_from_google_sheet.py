@@ -20,7 +20,7 @@ def get_decklists_from_googlesheet(url):
     for row in reader:
         if rownum == 0:
             for i, col in enumerate(row):
-                if "deck" in col.lower() and "list" in col.lower():
+                if "deck" in col.lower() and "list" in col.lower() and "text" in col.lower():
                     assert not decklist_col, "Multiple columns containing decklist found"
                     decklist_col = i
         else:

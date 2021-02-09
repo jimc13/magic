@@ -14,10 +14,10 @@ def line_in_set(line, set_to_match):
 
 def main(url):
     decklists = get_decklists_from_googlesheet(url)
-    repr_main = {"main", "mainboard", "mb", "md", "deck", "main ?deck", "creatures?", "spells", "lands?", "sorceries", "planeswalkers", "artifacts", "instant", "sorcery", "enchantments?", "Starts in Deck - .* cards" }
-    repr_side = {"side ?board", "side", "sb", "------------------------------", "_____SB:"}
+    repr_main = {"main", "mainboard", "mb", "md", "deck", "main ?deck", "creatures?", "spells", "lands?", "sorceries", "planeswalkers", "artifacts", "instant", "sorcery", "enchantments?", "Starts in Deck - .* cards", "- Mainboard \(60\) - "}
+    repr_side = {"side ?board", "side", "sb", "------------------------------", "_____SB:", "- Sideboard \(15\) - ", "Sideboard ", "// Sideboard"}
     repr_break = {"//maybe-1", "//token-1", "Added Tokens for Convenience:"}
-    repr_ignore = {"// Turbo Ninja", "==========", "2f54f"}
+    repr_ignore = {"// Turbo Ninja", "==========", "2f54f", "Companion"}
     cards_mainboard = {}
     cards_sideboard = {}
     exceptions = set()
@@ -141,6 +141,8 @@ if __name__ == "__main__":
     print("Processing doc")
     sorted_cards_mainboard, sorted_cards_sideboard, excepts_to_print = main(args.url)
     print("Writing output files")
+    name = name.replace("(responses)", "")
+    name = name.replace(":", "")
     with codecs.open("exports/{}_mainboards.txt".format(name), "w", "utf-8-sig") as f:
         for card in sorted_cards_mainboard:
             f.write('{} {}\r\n'.format(card[1], card[0]))

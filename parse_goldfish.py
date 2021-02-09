@@ -16,6 +16,7 @@ def add_card_to_cards(card, cards):
     name = name.strip()
     name = name.strip("\"")
     name = name.strip()
+    name = name.lower()
     if name not in cards:
         #c = get_untap_card('0 {}'.format(name))
         #name = c[1].name
